@@ -1,0 +1,58 @@
+-- Tạo Database (Thêm charset utf8mb4 để hỗ trợ tiếng Việt đầy đủ)
+CREATE DATABASE IF NOT EXISTS BookStore CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE BookStore;
+
+-- 1. Bảng Danh mục sách (Thể loại sách)
+CREATE TABLE Categories (
+    CategoryID INT AUTO_INCREMENT PRIMARY KEY, -- Thay IDENTITY(1,1) bằng AUTO_INCREMENT
+    CategoryName VARCHAR(100) NOT NULL,        -- Thay NVARCHAR bằng VARCHAR
+    Description VARCHAR(500)                   -- Mô tả thêm
+);
+
+-- 2. Bảng Nhà xuất bản
+CREATE TABLE Publishers (
+    PublisherID INT AUTO_INCREMENT PRIMARY KEY,
+    PublisherName VARCHAR(200) NOT NULL,
+    Address VARCHAR(500),
+    Phone VARCHAR(20)
+);
+
+-- 3. Bảng Tác giả
+CREATE TABLE Authors (
+    AuthorID INT AUTO_INCREMENT PRIMARY KEY,
+    AuthorName VARCHAR(150) NOT NULL,
+    Biography TEXT                             -- Thay NVARCHAR(MAX) bằng TEXT
+);
+
+-- 4. Bảng Sách (Bảng trung tâm của kho)
+CREATE TABLE Books (
+    BookID INT AUTO_INCREMENT PRIMARY KEY,
+    Title VARCHAR(255) NOT NULL,               -- Tên sách
+    CategoryID INT NOT NULL,                   -- Thuộc thể loại nào
+    PublisherID INT NOT NULL,                  -- Do ai xuất bản
+    PublishYear INT,                           -- Năm xuất bản
+    ISBN VARCHAR(20) UNIQUE,                   -- Mã số sách chuẩn quốc tế (Không được trùng)
+    ImportPrice DECIMAL(18,2) NOT NULL CHECK (ImportPrice >= 0), -- Giá nhập vào
+    SalePrice DECIMAL(18,2) NOT NULL CHECK (SalePrice >= 0),     -- Giá bán ra
+    StockQuantity INT NOT NULL DEFAULT 0 CHECK (StockQuantity >= 0), -- Số lượng tồn kho (Không được âm)
+    ImageURL VARCHAR(500),                     -- Đường dẫn ảnh bìa sách
+    Status TINYINT(1) DEFAULT 1,               -- Thay BIT bằng TINYINT(1) (Trạng thái: 1 là Đang kinh doanh, 0 là Ngừng bán)
+
+    -- Thiết lập Khóa ngoại (Mối quan hệ 1-Nhiều)
+    CONSTRAINT FK_Books_Categories FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID),
+    CONSTRAINT FK_Books_Publishers FOREIGN KEY (PublisherID) REFERENCES Publishers(PublisherID)
+);
+
+-- 5. Bảng trung gian Sách - Tác giả
+-- (Giải quyết mối quan hệ Nhiều-Nhiều: 1 sách có nhiều tác giả, 1 tác giả viết nhiều sách)
+CREATE TABLE BookAuthors (
+    BookID INT NOT NULL,
+    AuthorID INT NOT NULL,
+
+    -- Khóa chính kép (Composite Key)
+    PRIMARY KEY (BookID, AuthorID),
+
+    -- Khóa ngoại
+    CONSTRAINT FK_BookAuthors_Books FOREIGN KEY (BookID) REFERENCES Books(BookID) ON DELETE CASCADE,
+    CONSTRAINT FK_BookAuthors_Authors FOREIGN KEY (AuthorID) REFERENCES Authors(AuthorID) ON DELETE CASCADE
+);
